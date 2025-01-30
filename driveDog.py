@@ -6,6 +6,7 @@ import logging.handlers
 import filecmp
 import shutil
 import dotenv
+import hashlib
 from datetime import datetime
 
 
@@ -15,7 +16,7 @@ from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
 
 class DriveSync:
-    def __init__(self, credentials_path, drive_folder_id, local_folder, output_folder):
+    def __init__(self, credentials_path, drive_folder_id, log_drive_folder_id, local_folder, output_folder):
         self.credentials = service_account.Credentials.from_service_account_file(
             credentials_path,
             scopes=['https://www.googleapis.com/auth/drive']
@@ -23,6 +24,7 @@ class DriveSync:
         self.service = build('drive', 'v3', credentials=self.credentials)
 
         self.drive_folder_id = drive_folder_id
+        self.log_drive_folder_id = log_drive_folder_id
         self.local_folder = local_folder
         self.output_folder = output_folder
 
@@ -172,24 +174,53 @@ class DriveSync:
             return False
 
     def sync(self):
-    
         logging.info("=== Starting sync process ===")
         try:
             drive_files = self.get_drive_files()
 
             for drive_file in drive_files:
                 relative_path = drive_file.get('path', drive_file['name'])
-                local_path = os.path.join(self.local_folder, relative_path)
+                local_path = os.path.join(self.output_folder, relative_path)
+
+                if os.path.exists(local_path):
+                    local_md5 = self.md5(local_path)
+                    drive_md5 = drive_file.get('md5Checksum')
+                    if local_md5 == drive_md5:
+                        logging.info(f"Skipping {local_path}, already up-to-date.")
+                        continue 
+
                 self.download_file(drive_file['id'], local_path)
 
             self.move_files(self.local_folder, self.output_folder)
 
+            for root, dirs, files in os.walk(self.local_folder):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    try:
+                        os.remove(file_path)
+                        logging.info(f"Deleted cahced file: {file_path}")
+                    except Exception as e:
+                        logging.error(f"Error deleting cached {file_path}: {str(e)}")
+
             logging.info("=== Sync process complete ===")
 
-            self.upload_log_file('drive_sync.log', self.drive_folder_id)
+            self.upload_log_file('drive_sync.log', self.log_drive_folder_id)
 
         except Exception as e:
             logging.error(f"Sync error: {str(e)}")
+
+    def md5(self, file_path):
+
+        hash_md5 = hashlib.md5()
+        try:
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+        except Exception as e:
+            logging.error(f"Error computing MD5 for {file_path}: {e}")
+            return None
+        return hash_md5.hexdigest()
+
 
     def start_continuous_sync(self, interval=60):
         logging.info(f"Starting continuous sync; interval: {interval} seconds.")
@@ -212,10 +243,11 @@ if __name__ == "__main__":
 
     CREDENTIALS_PATH = os.getenv("CREDENTIALS_PATH")
     DRIVE_FOLDER_ID = os.getenv("DRIVE_FOLDER_ID")
+    LOG_DRIVE_FOLDER_ID = os.getenv("LOG_DRIVE_FOLDER_ID")
     LOCAL_FOLDER = os.getenv("LOCAL_FOLDER")
     OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER")
 
     SYNC_INTERVAL = 10  
     
-    sync = DriveSync(CREDENTIALS_PATH, DRIVE_FOLDER_ID, LOCAL_FOLDER, OUTPUT_FOLDER)
+    sync = DriveSync(CREDENTIALS_PATH, DRIVE_FOLDER_ID, LOG_DRIVE_FOLDER_ID, LOCAL_FOLDER, OUTPUT_FOLDER)
     sync.start_continuous_sync(SYNC_INTERVAL)
