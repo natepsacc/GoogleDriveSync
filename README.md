@@ -15,7 +15,6 @@ This script provides an automated way to sync files between a Google Drive folde
    - Generate a **Service Account Key** (JSON format).  
 
 **Set up `.env` file**  
-   Create a `.env` file in the project directory and add:  
    ```ini
    CREDENTIALS_PATH=path/to/your-service-account.json
    DRIVE_FOLDER_ID=your_drive_folder_id
