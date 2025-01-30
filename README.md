@@ -11,11 +11,10 @@ This script provides an automated way to sync files between a Google Drive folde
 ## Requirements  
 - req.txt
 
-## Setup  
-1. **Create a Google Cloud Project & Enable Drive API**  
+**Create a Google Cloud Project & Enable Drive API**  
    - Generate a **Service Account Key** (JSON format).  
 
-2. **Set up `.env` file**  
+**Set up `.env` file**  
    Create a `.env` file in the project directory and add:  
    ```ini
    CREDENTIALS_PATH=path/to/your-service-account.json
