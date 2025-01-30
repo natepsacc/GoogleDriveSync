@@ -146,14 +146,23 @@ class DriveSync:
                 logging.info(f"Copied file {file} to {dst_file_path}")
 
     def upload_log_file(self, local_log_path, folder_id):
-
         if not os.path.exists(local_log_path):
             logging.warning(f"Log file does not exist locally: {local_log_path}")
             return False
 
         try:
+            log_filename = os.path.basename(local_log_path)
+
+            query = f"'{folder_id}' in parents and name = '{log_filename}' and trashed = false"
+            response = self.service.files().list(q=query, fields="files(id, name)").execute()
+
+            for file in response.get('files', []):
+                file_id = file['id']
+                self.service.files().delete(fileId=file_id).execute()
+                logging.info(f"Deleted old log file: {file['name']} (ID: {file_id})")
+
             file_metadata = {
-                'name': os.path.basename(local_log_path),  
+                'name': log_filename,
                 'parents': [folder_id]
             }
             media = MediaFileUpload(local_log_path, mimetype='text/plain', resumable=True)
@@ -164,13 +173,13 @@ class DriveSync:
                 fields='id'
             ).execute()
 
-            logging.info(
-                f"Uploaded '{local_log_path}' to Drive folder '{folder_id}'. File ID: {created_file.get('id')}"
-            )
+            logging.info(f"Uploaded '{local_log_path}' to Drive folder '{folder_id}'. File ID: {created_file.get('id')}")
             return True
+
         except Exception as e:
             logging.error(f"Error uploading log file '{local_log_path}' to Drive: {str(e)}")
             return False
+
 
     def sync(self):
         logging.info("=== Starting sync process ===")
