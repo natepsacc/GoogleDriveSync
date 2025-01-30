@@ -152,7 +152,7 @@ class DriveSync:
 
         try:
             file_metadata = {
-                'name': os.path.basename(local_log_path),  # e.g. "drive_sync.log"
+                'name': os.path.basename(local_log_path),  
                 'parents': [folder_id]
             }
             media = MediaFileUpload(local_log_path, mimetype='text/plain', resumable=True)
