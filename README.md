@@ -3,7 +3,6 @@
 ## Overview  
 This script provides an automated way to sync files between a Google Drive folder and a local directory, ensuring that files are downloaded, moved to an output directory, and logs are uploaded back to Drive. 
 
-## Features  
 - **Google Drive Sync**: Downloads files from a specified Drive folder.  
 - **Local File Management**: Moves files from the local sync directory to an output directory.  
 - **Logging**: Maintains a log file (`drive_sync.log`) and uploads it to Google Drive.  
