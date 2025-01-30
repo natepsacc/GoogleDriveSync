@@ -80,7 +80,6 @@ class DriveSync:
                 
                 for item in response.get('files', []):
                     if item['name'].startswith('drive_sync.log'):
-                        logging.info(f"Skipping log file in Drive: {item['name']}")
                         continue
 
                     if item['mimeType'] == 'application/vnd.google-apps.folder':
@@ -247,7 +246,7 @@ if __name__ == "__main__":
     LOCAL_FOLDER = os.getenv("LOCAL_FOLDER")
     OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER")
 
-    SYNC_INTERVAL = 10  
+    SYNC_INTERVAL = int(os.getenv("SYNC_INT"))
     
     sync = DriveSync(CREDENTIALS_PATH, DRIVE_FOLDER_ID, LOG_DRIVE_FOLDER_ID, LOCAL_FOLDER, OUTPUT_FOLDER)
     sync.start_continuous_sync(SYNC_INTERVAL)
